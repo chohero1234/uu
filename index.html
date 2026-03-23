@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 공학개론 5조</title>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @keyframes float { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(40px, -20px); } }
+        @keyframes twinkle { 0%, 100% { opacity: 0.4; transform: scale(0.8); } 50% { opacity: 1; transform: scale(1.3); } }
+        @keyframes pop-in { 0% { transform: scale(0.8); opacity: 0; } 70% { transform: scale(1.1); } 100% { transform: scale(1); opacity: 1; } }
+        body { cursor: none; margin: 0; padding: 0; overflow: hidden; background-color: #4b8df8; }
+        #root { height: 100vh; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        // 아이콘 설정
+        const { User, Users, MessageSquare, Sparkles, Plus, HelpCircle, Settings, X, MousePointer2, Star } = lucide;
+
+        const App = () => {
+            const [messages, setMessages] = React.useState([]);
+            const [isTyping, setIsTyping] = React.useState(false);
+            const [showHelpModal, setShowHelpModal] = React.useState(false);
+            const [showSettingsModal, setShowSettingsModal] = React.useState(false);
+            const [language, setLanguage] = React.useState('ko');
+            const [mousePos, setMousePos] = React.useState({ x: 0, y: 0 });
+            const scrollEndRef = React.useRef(null);
+
+            const translations = {
+                ko: { newChat: "새 채팅", recent: "최근 대화", help: "도움말", settings: "설정", title: "AI 공학개론 5조", inputPlaceholder: "궁금한 항목을 선택해주세요", typing: "입력 중...", langSelect: "언어 설정", helpTitle: "도움말", helpContent1: "우리 조원들의 정보와 소개를 확인하실 수 있습니다." },
+                en: { newChat: "New Chat", recent: "Recent", help: "Help", settings: "Settings", title: "AI Team 5", inputPlaceholder: "Select an item to chat", typing: "Typing...", langSelect: "Language", helpTitle: "Help", helpContent1: "You can check our team information." }
+            };
+            const t = translations[language];
+
+            React.useEffect(() => {
+                const handleMouseMove = (e) => setMousePos({ x: e.clientX, y: e.clientY });
+                window.addEventListener('mousemove', handleMouseMove);
+                return () => window.removeEventListener('mousemove', handleMouseMove);
+            }, []);
+
+            React.useEffect(() => {
+                scrollEndRef.current?.scrollIntoView({ behavior: "smooth" });
+            }, [messages, isTyping]);
+
+            const teamData = {
+                teamInfo: { id: 'team', question: language === 'ko' ? "우리 조 전체 소개" : "About our team", answer: "안녕하세요! 저희는 'AI 공학개론' 5조입니다. 바이오메디컬공학부와 자율전공학부의 만남으로 구성되었습니다. \n\n\"우리가 세상을 구하진 않지만, 과제는 구한다!\" \n\n저희 팀은 서로서로 친해지며 앞으로 있을 활동도 열심히 참여하겠습니다!", image: "https://i.postimg.cc/wjn6Rs5B/Kakao-Talk-20260323-182324252.png", neonColor: "blue" },
+                members: [
+                    { id: 1, name: "조영웅", role: "조장", question: "조장 조영웅님은?", answer: "[리더십 설탕 MAX] 자율전공의 유연함으로 모든 과제 빌런을 물리치는 팀의 든든한 리더, 블로섬 담당입니다!", image: "https://i.postimg.cc/hzDL4ysX/Kakao-Talk-20260323-180255097-02.png", neonColor: "pink" },
+                    { id: 2, name: "박선주", role: "조원", question: "조원 박선주님은?", answer: "[친화력 스파이스 MAX] 바이오 전공 지식에 긍정 에너지를 섞어 팀의 사기를 높이는 러블리 버블 담당입니다!", image: "https://i.postimg.cc/gXzVcSsv/Kakao-Talk-20260323-180255097-03.png", neonColor: "blue" },
+                    { id: 4, name: "신가연", role: "조원", question: "조원 신가연님은?", answer: "[집중력 케미컬 X MAX] 맡은 임무는 절대 놓치지 않는 정밀 타격 능력, 팀의 화력을 책임지는 버터컵 담당입니다!", image: "https://i.postimg.cc/k6JQM1sK/Kakao-Talk-20260323-180255097.png", neonColor: "green" },
+                    { id: 3, name: "박효빈", role: "조원", question: "조원 박효빈님은?", answer: "[통찰력 마법 가루 MAX] 복잡한 자료 속에서 정답만 쏙쏙 뽑아내는 천재적인 브레인, 팀의 비밀 병기입니다!", image: "https://i.postimg.cc/YGr62nRN/Kakao-Talk-20260323-180255097-01.png", neonColor: "purple" }
+                ]
+            };
+
+            const handleQuestionClick = (q, a, name, image, isTeam, neonColor) => {
+                if (isTyping) return;
+                setMessages(prev => [...prev, { type: 'user', text: q }]);
+                setIsTyping(true);
+                setTimeout(() => {
+                    setIsTyping(false);
+                    setMessages(prev => [...prev, { type: 'bot', text: a, name, image, isTeam, neonColor }]);
+                }, 800);
+            };
+
+            const stars = React.useMemo(() => [...Array(20)].map((_, i) => ({ id: i, top: `${Math.random() * 100}%`, left: `${Math.random() * 100}%`, size: Math.random() * 5 + 5 })), []);
+
+            return (
+                <div className="flex h-full w-full relative select-none overflow-hidden">
+                    {/* 별 배경 */}
+                    <div className="absolute inset-0 pointer-events-none">
+                        {stars.map(s => (
+                            <div key={s.id} className="absolute text-yellow-300 opacity-60 animate-[twinkle_3s_infinite_ease-in-out]" style={{ top: s.top, left: s.left, animationName: 'twinkle' }}>
+                                <Star size={s.size} fill="currentColor" />
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* 커스텀 마우스 (윈도우에서도 잘 보임) */}
+                    <div className="fixed pointer-events-none z-[9999]" style={{ left: mousePos.x, top: mousePos.y, transform: 'translate(-50%, -50%)' }}>
+                        <div className="w-5 h-5 bg-white rounded-full border-2 border-yellow-400 shadow-lg"></div>
+                    </div>
+
+                    {/* 사이드바 */}
+                    <aside className="hidden md:flex flex-col w-56 p-6 z-10">
+                        <div className="bg-pink-500 rounded-2xl p-4 mb-8 text-white font-black text-center shadow-lg border-2 border-white">{t.newChat}</div>
+                        <div className="flex-1 space-y-3">
+                            <p className="text-xs font-black text-white/80 uppercase">{t.recent}</p>
+                            <div className="bg-white/20 p-3 rounded-xl border border-white/30 text-white text-xs font-bold">{t.title}</div>
+                        </div>
+                        <div className="space-y-4 pt-6 border-t border-white/20">
+                            <button onClick={() => setShowHelpModal(true)} className="flex items-center gap-2 text-white font-black text-sm"><HelpCircle size={18}/> {t.help}</button>
+                            <button onClick={() => setShowSettingsModal(true)} className="flex items-center gap-2 text-white font-black text-sm"><Settings size={18}/> {t.settings}</button>
+                        </div>
+                    </aside>
+
+                    {/* 메인 화면 */}
+                    <main className="flex-1 bg-white md:m-4 md:rounded-[3rem] shadow-2xl flex flex-col overflow-hidden z-10 border-4 border-white">
+                        <header className="px-8 py-5 border-b-4 border-blue-50 flex justify-between items-center">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white font-black border-2 border-white">5</div>
+                                <h1 className="text-xl font-black text-gray-800">{t.title}</h1>
+                            </div>
+                            <div className="w-10 h-10 bg-pink-500 rounded-full border-2 border-white"></div>
+                        </header>
+
+                        <div className="flex-1 overflow-y-auto p-6 md:p-10 bg-slate-50">
+                            {messages.length === 0 ? (
+                                <div className="max-w-2xl mx-auto space-y-6">
+                                    <button onClick={() => handleQuestionClick(teamData.teamInfo.question, teamData.teamInfo.answer, "Team 5", teamData.teamInfo.image, true, "blue")} className="w-full p-6 bg-white border-4 border-blue-600 rounded-[2rem] shadow-[0_8px_0_#2563eb] flex items-center justify-between group">
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center text-white"><Users /></div>
+                                            <span className="text-lg font-black text-blue-900">{teamData.teamInfo.question}</span>
+                                        </div>
+                                        <Sparkles className="text-yellow-400" />
+                                    </button>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        {teamData.members.map(m => (
+                                            <button key={m.id} onClick={() => handleQuestionClick(m.question, m.answer, m.name, m.image, false, m.neonColor)} className="p-5 bg-white border-4 border-gray-200 rounded-[2rem] h-36 flex flex-col justify-between text-left hover:scale-105 transition-transform" style={{borderColor: m.neonColor === 'pink' ? '#db2777' : m.neonColor === 'blue' ? '#2563eb' : m.neonColor === 'green' ? '#16a34a' : '#9333ea'}}>
+                                                <span className="font-black text-sm text-gray-700">{m.question}</span>
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center"><User size={14}/></div>
+                                                    <div className="flex flex-col"><span className="text-xs font-black">{m.name}</span><span className="text-[10px] font-bold opacity-50 uppercase">{m.role}</span></div>
+                                                </div>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="max-w-2xl mx-auto space-y-8">
+                                    {messages.map((m, i) => (
+                                        <div key={i} className={`flex gap-4 ${m.type === 'user' ? 'flex-row-reverse' : ''} animate-[pop-in_0.3s_ease-out]`}>
+                                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-white font-black border-2 border-white shadow-md ${m.type === 'user' ? 'bg-blue-600' : 'bg-pink-500'}`}>{m.type === 'user' ? 'U' : <Sparkles size={18}/>}</div>
+                                            <div className={`flex flex-col gap-2 max-w-[80%] ${m.type === 'user' ? 'items-end' : ''}`}>
+                                                {m.type === 'bot' && <span className="text-xs font-black text-pink-600">{m.name}</span>}
+                                                <div className={`p-4 rounded-[1.5rem] font-black text-sm shadow-xl border-4 ${m.type === 'user' ? 'bg-blue-600 text-white border-blue-700' : 'bg-white text-gray-800 border-pink-100'}`}>{m.text}</div>
+                                                {m.image && <div className="mt-4 rounded-[2rem] border-8 border-white shadow-2xl overflow-hidden"><img src={m.image} className="w-full h-auto" /></div>}
+                                            </div>
+                                        </div>
+                                    ))}
+                                    {isTyping && <div className="animate-pulse bg-gray-200 h-10 w-24 rounded-full"></div>}
+                                    <div ref={scrollEndRef} />
+                                </div>
+                            )}
+                        </div>
+
+                        <footer className="p-8 bg-white">
+                            <div className="max-w-2xl mx-auto bg-slate-100 rounded-[2rem] p-4 flex items-center border-4 border-white shadow-inner">
+                                <input type="text" className="bg-transparent flex-1 outline-none px-4 font-black text-sm" placeholder={t.inputPlaceholder} readOnly />
+                                <div className="w-10 h-10 bg-pink-500 rounded-xl flex items-center justify-center text-white shadow-lg"><MousePointer2 size={18}/></div>
+                            </div>
+                        </footer>
+                    </main>
+
+                    {/* 모달 설정 */}
+                    {(showHelpModal || showSettingsModal) && (
+                        <div className="fixed inset-0 z-[100] bg-blue-900/40 backdrop-blur-sm flex items-center justify-center p-6" onClick={() => {setShowHelpModal(false); setShowSettingsModal(false);}}>
+                            <div className="bg-white rounded-[3rem] p-10 w-full max-w-sm border-8 border-white shadow-2xl" onClick={e => e.stopPropagation()}>
+                                <div className="flex justify-between items-center mb-6">
+                                    <h2 className="text-2xl font-black">{showHelpModal ? t.helpTitle : t.langSelect}</h2>
+                                    <button onClick={() => {setShowHelpModal(false); setShowSettingsModal(false);}} className="p-2 bg-slate-100 rounded-xl"><X /></button>
+                                </div>
+                                {showHelpModal ? (
+                                    <p className="font-black text-gray-600 leading-relaxed">{t.helpContent1}</p>
+                                ) : (
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <button onClick={() => setLanguage('ko')} className={`py-4 rounded-2xl font-black ${language === 'ko' ? 'bg-pink-500 text-white' : 'bg-slate-100'}`}>KOR</button>
+                                        <button onClick={() => setLanguage('en')} className={`py-4 rounded-2xl font-black ${language === 'en' ? 'bg-blue-500 text-white' : 'bg-slate-100'}`}>ENG</button>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
